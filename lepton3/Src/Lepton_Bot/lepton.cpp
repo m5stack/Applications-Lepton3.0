@@ -239,8 +239,8 @@ void Lepton::getRawValues()
     while(digitalRead(13) == HIGH)
     {
       delay_time++;
-      if(delay_time>=10)
-      return;    
+      if(delay_time>=20)
+      break;    
     }
  
     //Reset error counter for each segment
@@ -288,9 +288,9 @@ void Lepton::getRawValues()
    
   }
 
-
-  doGetCommand(CMD_SYS_AUX_TEMPERATURE_KELVIN, &aux_temp);
   doGetCommand(CMD_SYS_FPA_TEMPERATURE_KELVIN, &fpa_temp);
+  doGetCommand(CMD_SYS_AUX_TEMPERATURE_KELVIN, &aux_temp);
+  
   //End SPI Transmission
   end();
 }
@@ -304,48 +304,18 @@ void Lepton::reset()
 }
 uint16_t Lepton::syncFrame() {
   
-  static int count;
-  #if 1
-    SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE3));
-  //SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE3));
-    //if(count < 5)
-      //SPI.beginTransaction(SPISettings(10200000, MSBFIRST, SPI_MODE3));
-      //SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE3));
-   //SPI.beginTransaction(SPISettings(10200000, MSBFIRST, SPI_MODE3));
-   // else
-     // SPI.beginTransaction(SPISettings(10130000, MSBFIRST, SPI_MODE3));
-  //SPI.beginTransaction(SPISettings(10110000, MSBFIRST, SPI_MODE3));
-    count++;
-    if(count > 5)
-     count = 5;
-   #else
-     static int l,b;
-     l = 4000000 + b/5 * 100000;
-     Serial.printf("b =  %d\n", l);
-     SPI.beginTransaction(SPISettings(l, MSBFIRST, SPI_MODE3));
-     b++;
+   SPI.beginTransaction(SPISettings(15000000, MSBFIRST, SPI_MODE3));
+   digitalWrite(_ssPin, LOW);
+   delay(0.02);
    
-  //SPI.beginTransaction(SPISettings(36000, MSBFIRST, SPI_MODE0));
-   #endif
-  // SPI.beginTransaction(SPISettings(11000000, MSBFIRST, SPI_MODE3));
-  //SPI.beginTransaction(SPISettings(36000, MSBFIRST, SPI_MODE0));
-   //SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE3));
-  //SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE3));
-  //SPISettings(SPISettings(20000000, MSBFIRST, SPI_MODE3)); //なくても動くが気休め
-  //SPI.setClockDivider(SPI_CLOCK_DIV2);
-   digitalWrite(_ssPin, LOW);//delay(0.02);
-  //delay(186);
-
-/*
-     static int l,b;
-     l = 360000 + b/5 * 100000;
-     Serial.printf("b =  %d\n", l);
-     //SPI.beginTransaction(SPISettings(l, MSBFIRST, SPI_MODE3));
-     b++;
-  SPISettings(SPISettings(l, MSBFIRST, SPI_MODE3)); //なくても動くが気休め
-  SPI.setClockDivider(SPI_CLOCK_DIV2);
-  digitalWrite(_ssPin, LOW);//delay(0.02);
-  */
+    static int count;
+    if(count < 1)
+     delay(1000);
+    count++;
+    if(count>=5)
+    count = 5;
+    
+    
 }
 
 void Lepton::end() {
@@ -426,7 +396,7 @@ int Lepton::read_160x120_Frame(uint16_t* data) {
     }
     //Serial.printf("................readFrame ended with row %4x != id %4x\n", row, id);
   }
-  Serial.printf("readFrame ended with row %4x != id %4x\n", row, id);
+  //Serial.printf("readFrame ended with row %4x != id %4x\n", row, id);
   return 0;
 }
 
