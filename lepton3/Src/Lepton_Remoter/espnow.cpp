@@ -1,24 +1,27 @@
 #include"espnow.h"
+#include<M5Stack.h>
+#include<WiFi.h>
+#include<esp_now.h>
+#include<Wire.h>
 
 Espnow::Espnow(void)
 {
   
 }
 
-void Espnow::init(void){
-  m5.begin();
-  Serial.begin(115200);
+void Espnow::BotInit(void){
+  
+  //m5.begin();
+  //Serial.begin(115200);
   
   pinMode(37, INPUT);
   pinMode(38, INPUT);
   pinMode(39, INPUT);
-  digitalWrite(37, HIGH);
-  digitalWrite(38, HIGH);
-  digitalWrite(39, HIGH);
+  //digitalWrite(37, HIGH);
+ // digitalWrite(38, HIGH);
+  //digitalWrite(39, HIGH);
 
   WiFi.mode(WIFI_STA);
-  ConfigDeviceAP();
-  WiFi.disconnect();
   Serial.println("ESPNow Master Example");
   // This is the mac address of the Master in Station Mode
   Serial.print("STA MAC: ");
@@ -39,12 +42,7 @@ void Espnow::init(void){
   Serial.print("mac_addr = ");Serial.print(mac_addr);
  
   sscanf(mac_addr.c_str(), "%x:%x:%x:%x:%x:%x%c",  &peer_addr[0], &peer_addr[1], &peer_addr[2], &peer_addr[3], &peer_addr[4], &peer_addr[5]);
-  //for (int ii = 0; ii < 6; ++ii ) {
-       // Serial.print((uint8_t) peer_addr[ii], HEX);
-       // if (ii != 5) Serial.print(":");
-      //}
-
-
+  
   for (int i = 0; i < 6; ++i ){
     slave.peer_addr[i] = (uint8_t) peer_addr[i];
   }
@@ -52,19 +50,63 @@ void Espnow::init(void){
   esp_now_add_peer(&slave);
 }
 
+void Espnow::RemoteInit(void)
+{
+   //m5.begin();
+  //Serial.begin(115200);
+  
+  pinMode(37, INPUT);
+  pinMode(38, INPUT);
+  pinMode(39, INPUT);
+  //digitalWrite(37, HIGH);
+ // digitalWrite(38, HIGH);
+  //digitalWrite(39, HIGH);
+
+  WiFi.mode(WIFI_AP_STA);
+  //WiFi.mode(WIFI_AP);
+  ConfigDeviceAP();
+  Serial.println("ESPNow Master Example");
+  // This is the mac address of the Master in Station Mode
+  Serial.print(" AP MAC: ");
+  Serial.println(WiFi.softAPmacAddress());
+  //sscanf(WiFi.softAPmacAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &sta_addr[0], &sta_addr[1], &sta_addr[2], &sta_addr[3], &sta_addr[4], &sta_addr[5] );
+//WiFi.softAPmacAddress()
+  //if(!bot)
+  sscanf(WiFi.softAPmacAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &sta_addr[0], &sta_addr[1], &sta_addr[2], &sta_addr[3], &sta_addr[4], &sta_addr[5] );
+   //else
+   //sscanf(WiFi.softAPmacAddress().c_str(), "%x:%x:%x:%x:%x:%x",  &sta_addr[0], &sta_addr[1], &sta_addr[2], &sta_addr[3], &sta_addr[4], &sta_addr[5] );
+//WiFi.softAPmacAddress()
+   //WiFi.softAPmacAddress()
+  InitEspNow();
+  
+  preferences.begin("my-app", false);
+  String mac_addr;
+  mac_addr = preferences.getString("mac_addr", "error");
+  Serial.print("mac_addr = ");Serial.print(mac_addr);
+ 
+  sscanf(mac_addr.c_str(), "%x:%x:%x:%x:%x:%x%c",  &peer_addr[0], &peer_addr[1], &peer_addr[2], &peer_addr[3], &peer_addr[4], &peer_addr[5]);
+  
+  for (int i = 0; i < 6; ++i ){
+    slave.peer_addr[i] = (uint8_t) peer_addr[i];
+  }
+  slave.channel = CHANNEL;
+  esp_now_add_peer(&slave);
+}
 
 // config AP SSID
 void Espnow::ConfigDeviceAP(void)
 {
-  char* SSID = "Slave_2";
-  bool result = WiFi.softAP(SSID, "12345678", CHANNEL, 0);
+ 
+  String Mac = WiFi.macAddress();
+  String SSID = "Slave:"+ Mac;
+  bool result = WiFi.softAP(SSID.c_str(), "12345678", CHANNEL, 0);
   if (!result)
   {
     Serial.println("AP Config failed.");
   } else
   {
     Serial.println("AP Config Success. Broadcasting with AP: " + String(SSID));
-  } 
+  }
 }
 
 // Init ESP Now with fallback
@@ -183,8 +225,8 @@ void Espnow::RemoteConnectUpdate(){
   {
     updatetime++;
   }
-  Serial.println(updatetime);Serial.println(updatetime);
-  if (updatetime >= 300){
+  Serial.println(updatetime);
+  if (updatetime >= 30){
     updatetime = 0;
     delay(200);
     M5.Speaker.tone(80, 200);
@@ -244,7 +286,10 @@ void Espnow::RemoteConnectUpdate(){
              }
              slave.channel = CHANNEL;
              esp_now_add_peer(&slave);
-             for(int i = 0;i < 6; i++){
+             M5.Lcd.setCursor(140, 210);
+             M5.Lcd.println("Quit");
+             while(!connectflag){
+             //for(int i = 0;i < 6; i++){
                esp_err_t result = esp_now_send(slave.peer_addr, sta_addr, sizeof(sta_addr)+ 1);
                Serial.print("Send Status: ");
                if (result == ESP_OK) {
@@ -263,13 +308,12 @@ void Espnow::RemoteConnectUpdate(){
                Serial.println("Not sure what happened");
               }
               delay(100);
-         }
+        // }
 
-        M5.Lcd.setCursor(140, 210);
-        M5.Lcd.println("Quit");
+       
  
-        while(!connectflag)
-        {
+       // while(!connectflag)
+       // {
           if(digitalRead(38) == LOW) break;
         }
         if(connectflag){
@@ -455,9 +499,8 @@ void Espnow::BotConnectUpdate(void)
   {
     updatetime++;
   }
-  Serial.println(updatetime);
   //Serial.println(updatetime);
-  if (updatetime >= 300){
+  if (updatetime >= 10){
     updatetime = 0;
     delay(200);
     M5.Speaker.tone(80, 200);
@@ -471,7 +514,7 @@ void Espnow::BotConnectUpdate(void)
       M5.Lcd.setCursor(0, 0, 4);
       M5.Lcd.println("Broadcasting...");
       M5.Lcd.printf("(");
-      M5.Lcd.print(WiFi.macAddress());
+      M5.Lcd.print(WiFi.softAPmacAddress());
       M5.Lcd.printf(")");
       if(connect_num>=1) connect_num = 1;
       for (int i = 0; i < connect_num; i++){
