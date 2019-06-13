@@ -87,7 +87,7 @@ void task1(void * pvParameters) {
 
     for(;;) {
         delay(100);
-#if 1
+#if 0
         
         uint8_t data[10];
         data[0] = (uint8_t)(max_num>>8);
